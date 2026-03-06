@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from src.database.models.carrera_model import Carrera, CarreraBase, CarreraActualizacion
 from src.database.models.maestro_model import Maestro
+from src.database.models.materia_model import Materia
+from src.database.models.materia_carrera_model import Materia_Carrera
 from ..dependencies import SessionDep
 from typing import Any
 from sqlmodel import Field, SQLModel, create_engine, Session, select, col, or_, Relationship
@@ -16,6 +18,18 @@ def get_carrera(session: SessionDep) -> Any:
   results = session.exec(statement)
   carrera = results.all()
   return carrera
+
+@router.get("/{id}/materias")  
+def get_carrera_all_materias(id: int, session: SessionDep) -> Any:
+  carrera = session.get(Carrera, id)
+  if carrera is None: 
+    raise HTTPException(status_code=404, detail="La carrera que buscas no existe")
+  
+  #EL ORDEN DEL SELECT IMPORTA, los joins tienen que ser en base al primer select, y el where del final no es un join porque ya teníamos Materia_Carrera conectada al principio del query ****
+  statement = select(Materia_Carrera, Maestro, Materia).join(Materia, Materia_Carrera.materia_id == Materia.id).join(Maestro, Materia_Carrera.maestro_id == Maestro.id).where(Materia_Carrera.carrera_id == carrera.id)
+  
+  result = session.exec(statement).all()
+  return "Carrera: " + carrera.name, [{"materia": materia.name, "maestro": maestro.name, "Semestre": materia_carrera.semestre} for materia_carrera, materia, maestro in result]
 
 @router.post("/")
 def create_carrera(carrera: CarreraBase, session: SessionDep) -> Carrera: 
@@ -40,7 +54,7 @@ def update_carrera(id: int, carrera_actualizada: CarreraActualizacion, session: 
   if carrera is None: 
     raise HTTPException(status_code=404, detail="La carrera que buscas no existe")
   
-  statement = select(Carrera).where(col(Carrera.id_coordinador) == carrera.id_coordinador)
+  statement = select(Carrera).where(col(Carrera.id_coordinador) == carrera_actualizada.id_coordinador)
   result = session.exec(statement).first()
   if result is not None:
     raise HTTPException(status_code=400, detail="El maestro seleccionado ya coordina una carrera")
