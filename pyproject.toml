@@ -1,0 +1,20 @@
+[project]
+name = "parcial1-examen"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Scorpion-CC",email = "carloscantom@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard] (>=0.135.1,<0.136.0)",
+    "sqlmodel (>=0.0.37,<0.0.38)"
+]
+
+[tool.poetry]
+packages = [{include = "parcial1_examen", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
