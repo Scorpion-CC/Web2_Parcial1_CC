@@ -19,6 +19,18 @@ def get_carrera(session: SessionDep) -> Any:
   carrera = results.all()
   return carrera
 
+@router.get("/acro/{acronimo}", response_model=Carrera)
+def get_carrera(acronimo: str, session: SessionDep) -> Any:
+  
+  statement = select(Carrera).where(col(Carrera.acronimo) == acronimo)
+  results = session.exec(statement)
+  carrera = results.first()
+
+  if carrera is None: 
+    raise HTTPException(status_code=404, detail="La carrera que buscas no existe")
+  
+  return carrera
+
 @router.get("/{id}/materias")  
 def get_carrera_all_materias(id: int, session: SessionDep) -> Any:
   carrera = session.get(Carrera, id)
