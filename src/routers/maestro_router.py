@@ -1,5 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from src.database.models.maestro_model import Maestro, MaestroBase, MaestroActualizacion
+from src.database.models.materia_carrera_model import Materia_Carrera
+from src.database.models.materia_model import Materia
+from src.database.models.carrera_model import Carrera
 from ..dependencies import SessionDep
 from typing import Any
 from sqlmodel import Field, SQLModel, create_engine, Session, select, col, or_, Relationship
@@ -17,6 +20,24 @@ def get_maestros(session: SessionDep) -> Any:
   results = session.exec(statement)
   maestros = results.all()
   return maestros
+
+@router.get("/{id}/materias")
+def get_materias_maestro(id: int, session: SessionDep) -> Any:
+  maestro = session.get(Maestro, id)
+  if maestro is None: 
+    raise HTTPException(status_code=404, detail="El maestro que buscas no existe")
+
+  statement = (
+    select(Materia_Carrera, Carrera, Materia)
+    .join(Carrera, Materia_Carrera.carrera_id == Carrera.id)
+    .join(Materia, Materia_Carrera.materia_id == Materia.id)
+    .where(Materia_Carrera.maestro_id == maestro.id)
+    )
+  
+  result = session.exec(statement).all()
+
+  return "Maestro: " + maestro.name, [{"materia": materia.name, "carrera": carrera.acronimo, "semestre": materia_carrera.semestre} for materia_carrera, carrera, materia in result]
+
 
 @router.post("/", response_model = Maestro)
 def create_maestro(maestro: MaestroBase, session: SessionDep) -> Maestro: 
